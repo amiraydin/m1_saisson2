@@ -1,0 +1,25 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity comp is
+    Port ( G1 : in STD_LOGIC;
+           G2A : in STD_LOGIC;
+           G2B : in STD_LOGIC;
+           A : in STD_LOGIC_VECTOR (2 downto 0);
+           Y : out STD_LOGIC_VECTOR (7 downto 0));
+end comp;
+
+architecture Behavioral of comp is
+begin
+    Y <= "11111111" when G1 = '0' or G2A = '1' or G2B = '1' 
+    else
+         "11111110" when A = "000" else
+         "11111101" when A = "001" else
+         "11111011" when A = "010" else
+         "11110111" when A = "011" else
+         "11101111" when A = "100" else
+         "11011111" when A = "101" else
+         "10111111" when A = "110" else
+         "01111111" when A = "111" else
+         "11111111";
+end Behavioral;

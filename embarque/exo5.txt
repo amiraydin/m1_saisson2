@@ -1,0 +1,60 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity TrafficController is
+    Port (
+        clk : in std_logic;
+        p_request : in std_logic;
+        p_presence : in std_logic;
+        v_lights : out std_logic_vector(2 downto 0);
+        p_lights : out std_logic_vector(1 downto 0)
+    );
+end TrafficController;
+
+-- on a quatre états, red, green, blue plus le btn de demande pour les pietons 
+architecture Behavioral of TrafficController is
+    type state_type is (red, green, yellow, wait_p);
+    signal state : state_type;
+    signal counter : integer range 0 to 30;
+begin
+    process(clk)
+    begin
+        if rising_edge(clk) then
+            case state is
+                when red =>
+                    if p_request = '1' then
+                        state <= wait_p;
+                    else
+                        state <= green;
+                        counter <= 30;
+                    end if;
+                when green =>
+                    if counter = 0 then
+                        state <= yellow;
+                        counter <= 5;
+                    else
+                        counter <= counter - 1;
+                    end if;
+                when yellow =>
+                    if counter = 0 then
+                        state <= red;
+                    else
+                        counter <= counter - 1;
+                    end if;
+                when wait_p =>
+                    if p_presence = '0' or counter = 0 then
+                        state <= red;
+                    else
+                        counter <= counter - 1;
+                    end if;
+            end case;
+        end if;
+    end process;
+
+    v_lights <= "100" when state = red else
+                 "010" when state = yellow else
+                 "001";
+
+    p_lights <= "10" when state = wait_p else "01";
+end Behavioral;

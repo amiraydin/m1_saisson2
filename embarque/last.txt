@@ -1,0 +1,198 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity assemblage_complet is
+    Port (
+        A, B, ENA, ENB, Cin, INVA : in  std_logic;
+        F0, F1 : in std_logic;
+        X : out std_logic_vector(2 downto 0);
+        Cout : out std_logic
+    );
+end assemblage_complet;
+
+architecture Behavioral of assemblage_complet is
+    signal A_res, B_res : std_logic;
+    signal D0, D1, D2, D3 : std_logic;
+    signal additionneur_res : std_logic_vector(3 downto 0);
+    signal sortie_and, sortie_or, sortie_notB : std_logic;
+begin
+    
+    -- Appel de prevalue
+    process (A, ENA, B, ENB, INVA)
+    begin
+        -- Calcul de la première sortie (INVA XOR (A AND ENA))
+        A_res <= (not INVA and (A and ENA)) or (INVA and not (A and ENA));
+
+        -- Calcul de la deuxième sortie (B AND ENB)
+        B_res <= B and ENB;
+    end process;
+
+    -- Composant unite_logique
+    unite_logique_inst: unite_logique
+        port map (
+            A_res => A_res,
+            B_res => B_res,
+            sortie_and => sortie_and,
+            sortie_or => sortie_or,
+            sortie_notB => sortie_notB
+        );
+
+    -- Composant decodeur_2x4
+    decodeur_inst: decodeur_2x4
+        port map (
+            F0 => F0,
+            F1 => F1,
+            D0 => D0,
+            D1 => D1,
+            D2 => D2,
+            D3 => D3
+        );
+
+    -- Composant additionneur_4_entrees
+    additionneur_inst: additionneur_4_entrees
+        port map (
+            A_res => A_res,
+            B_res => B_res,
+            Cin => Cin,
+            D => D3, -- Sélectionnez une entrée du décodeur pour D
+            Cout => Cout,
+            resultat => additionneur_res
+        );
+
+    -- Composant multiplexeur
+    multiplexeur_inst: multiplexeur
+        port map (
+            sortie_and => sortie_and,
+            sortie_or => sortie_or,
+            sortie_notB => sortie_notB,
+            Q0 => D0,
+            Q1 => D1,
+            Q2 => D2,
+            Q3 => D3,
+            additionneur_res => additionneur_res,
+            X => X
+        );
+
+end Behavioral;
+
+
+entity unite_logique is
+        Port ( A_res, B_res : in  std_logic;
+               sortie_and, sortie_or, sortie_notB : out std_logic);
+    end unite_logique;
+
+    architecture Behavioral1 of unite_logique is
+    begin
+        process (A_res, B_res)
+        begin
+            case A_res & B_res is
+                when "11" =>
+                    sortie_or <= '1';
+                    sortie_and <= '1';
+                    sortie_notB <= '1';
+                when "10" =>
+                    sortie_or <= '1';
+                    sortie_and <= '0';  
+                    sortie_notB <= '0'; 
+                when "01" =>
+                    sortie_or <= '1';
+                    sortie_and <= '0'; 
+                    sortie_notB <= '1';
+                when others =>
+                    sortie_or <= '0';
+                    sortie_and <= '0';
+                    sortie_notB <= '0';
+            end case;
+        end process;
+    end Behavioral1;
+
+    entity decodeur_2x4 is
+        Port ( F0, F1 : in  std_logic;
+               D0, D1, D2, D3 : out std_logic);
+    end decodeur_2x4;
+
+    architecture Behavioral2 of decodeur_2x4 is
+    begin
+        process (F0, F1)
+        begin
+            case F0 & F1 is
+                when "00" =>
+                    D0 <= '1';
+                    D1 <= '0';
+                    D2 <= '0';
+                    D3 <= '0';
+                when "01" =>
+                    D0 <= '0';
+                    D1 <= '1';
+                    D2 <= '0';
+                    D3 <= '0';
+                when "10" =>
+                    D0 <= '0';
+                    D1 <= '0';
+                    D2 <= '1';
+                    D3 <= '0';
+                when "11" =>
+                    D0 <= '0';
+                    D1 <= '0';
+                    D2 <= '0';
+                    D3 <= '1';
+                when others =>
+                    D0 <= '0'; 
+                    D1 <= '0';
+                    D2 <= '0';
+                    D3 <= '0';
+            end case;
+        end process;
+    end Behavioral2;
+
+    entity additionneur_4_entrees is
+        Port ( A_res, B_res, Cin, D: in  std_logic;
+               Cout, resultat : out std_logic);
+    end additionneur_4_entrees;
+
+    architecture Behavioral3 of additionneur_4_entrees is
+    signal res_A, p1, p2 : std_logic;
+    begin
+        process (A_res, B_res, Cin, D)
+        begin
+            res_A <= ((not A_res and B_res) or ( A_res and not B_res));
+            resultat <= ((not res_A and Cin) or (res_A and not Cin));
+
+            p1 <= ((D and A_res) and B_res);
+            p2 <= ((Cin and res_A) and D);
+
+            if (p1 = '1' or p2 = '1') then 
+                Cout <= '1';
+            else 
+                Cout <= '0';
+        end if;
+        end process;
+    end Behavioral3;
+
+    entity multiplexeur is
+        Port (
+            sortie_and, sortie_or, sortie_notB : in  std_logic;
+            Q0, Q1, Q2, Q3 : in std_logic;
+            additionneur_res : in std_logic;
+            X : out std_logic_vector(2 downto 0)
+        );
+    end multiplexeur;
+
+    architecture Behavioral4 of multiplexeur is
+    begin
+        process (sortie_and, sortie_or, sortie_notB, Q0, Q1, Q2, Q3, additionneur_res)
+        begin
+            if sortie_and = '1' then
+                X <= "001";
+            elsif sortie_or = '1' then
+                X <= "010";
+            elsif sortie_notB = '1' then
+                X <= "011";
+            elsif Q3 = '1' then
+                X <= "101";
+            else
+                X <= "000";
+            end if;
+        end process;
+    end Behavioral4;

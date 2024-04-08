@@ -1,0 +1,30 @@
+
+var listSal = List("Bob - EDF - 3000 €", "Marie - edf - 1500 €", "Imene - EDF - 9000 $", "Paul - Allianz - 4500 $", "Pierre - LaPoste - 1500 €", "Samir - Laposte - 3500 $", "Thi - LaPoste - 1500 €", "Eva - allianz - 6000 $", "Alice - edf - 5000 €", "Alice - Allianz - 1700 €")
+
+listSal.foreach { salaireString =>  
+    val Array(nom, entreprise, salaireDevise) = salaireString.split(" - ");
+    val Array(salaire, devise) = salaireDevise.split(" ");
+    val salaireEnEuros = if (devise == "$") salaire.toDouble / 2 else salaire.toDouble;
+    if (salaireEnEuros <= 2000) {println(s"$nom - $salaireEnEuros?")}
+}
+
+var salairesModestes = 0
+var salairesMoyens = 0
+var salairesConfortables = 0
+
+listSal.foreach { salaireString =>
+    val Array(nom, entreprise, salaireDevise) = salaireString.split(" - ")
+    val Array(salaire, devise) = salaireDevise.split(" ")
+    val salaireEnEuros = if (devise == "$") salaire.toDouble / 2 else salaire.toDouble
+    if (salaireEnEuros < 2000) {
+        salairesModestes += 1
+    } else if (salaireEnEuros <= 4000) {
+    salairesMoyens += 1
+    } else {
+        salairesConfortables += 1
+    }
+}
+
+println(s"Nombre d'employés avec des salaires modestes : $salairesModestes")
+println(s"Nombre d'employés avec des salaires moyens : $salairesMoyens")
+println(s"Nombre d'employés avec des salaires confortables : $salairesConfortables")

@@ -1,0 +1,181 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity assemblage_complet is
+    Port ( A, B, ENA, ENB, Cin : in  std_logic;
+           F0, F1 : in std_logic;
+           resultat : out std_logic_vector(2 downto 0);
+           Cout : out std_logic);
+end assemblage_complet;
+
+architecture Behavioral of assemblage_complet is
+    signal INVA_temp : std_logic;
+    signal ual_sortie : std_logic_vector(2 downto 0);
+    signal additionneur_entree : std_logic_vector(3 downto 0);
+    signal additionneur_resultat : std_logic_vector(3 downto 0);
+    signal decodeur_sortie : std_logic_vector(3 downto 0);
+
+    entity additionneur_4_entrees is
+        Port ( A, B, C : in  std_logic;
+               D : in std_logic_vector(3 downto 0); -- 4 bits en entrée venant du décodeur
+               resultat : out std_logic_vector(3 downto 0);
+               Cout : out std_logic);
+    end additionneur_4_entrees;
+
+    architecture Behavioral of additionneur_4_entrees is
+    begin
+        process (A, B, C, D)
+        begin
+            -- Addition de A, B, C et D
+            resultat <= std_logic_vector(unsigned(A) + unsigned(B) + unsigned(C) + unsigned(D));
+            
+            -- Calcule la retenue (Cout)
+            Cout <= '1' when ((A and B) or (B and C) or (A and C) or (C and D) or (B and D) or (A and D)) = '1' else '0';
+        end process;
+    end Behavioral;
+
+    entity unite_logique is
+        Port ( A, B : in  std_logic;
+               ENA, ENB : in std_logic;
+               sortie_or, sortie_and, sortie_notB : out std_logic);
+    end unite_logique;
+
+    architecture Behavioral of unite_logique is
+    begin
+        process (A, B, ENA, ENB)
+        begin
+            case ENA & ENB is
+                when "11" =>
+                    sortie_or <= A or B;
+                    sortie_and <= A and B;
+                    sortie_notB <= not B;
+                when "10" =>
+                    sortie_or <= A or B;
+                    sortie_and <= A and B;
+                    sortie_notB <= '0'; -- Sortie notB désactivée si ENB est désactivé
+                when "01" =>
+                    sortie_or <= A or B;
+                    sortie_and <= '0'; -- Sortie and désactivée si ENA est désactivé
+                    sortie_notB <= not B;
+                when others =>
+                    sortie_or <= '0'; -- Toutes les sorties désactivées si ENA et ENB sont désactivés
+                    sortie_and <= '0';
+                    sortie_notB <= '0';
+            end case;
+        end process;
+    end Behavioral;
+
+    entity decodeur_2x4 is
+        Port ( F0, F1 : in  std_logic;
+               Q0, Q1, Q2, Q3 : out std_logic);
+    end decodeur_2x4;
+
+    architecture Behavioral of decodeur_2x4 is
+    begin
+        process (F0, F1)
+        begin
+            case F0 & F1 is
+                when "00" =>
+                    Q0 <= '1';
+                    Q1 <= '0';
+                    Q2 <= '0';
+                    Q3 <= '0';
+                when "01" =>
+                    Q0 <= '0';
+                    Q1 <= '1';
+                    Q2 <= '0';
+                    Q3 <= '0';
+                when "10" =>
+                    Q0 <= '0';
+                    Q1 <= '0';
+                    Q2 <= '1';
+                    Q3 <= '0';
+                when "11" =>
+                    Q0 <= '0';
+                    Q1 <= '0';
+                    Q2 <= '0';
+                    Q3 <= '1';
+                when others =>
+                    Q0 <= '0'; -- Si les entrées ne correspondent à aucun des cas ci-dessus, toutes les sorties sont désactivées
+                    Q1 <= '0';
+                    Q2 <= '0';
+                    Q3 <= '0';
+            end case;
+        end process;
+    end Behavioral;
+
+begin
+
+    -- Opération XOR entre A et ENA pour former INVA
+    process (A, ENA)
+    begin
+        if ENA = '1' then
+            INVA_temp <= A xor ENA;
+        else
+            INVA_temp <= '0'; -- Si ENA est désactivé, INVA est également à 0
+        end if;
+    end process;
+
+    -- Appel de l'unité logique
+    process (INVA_temp, B, ENA, ENB)
+    begin
+        case INVA_temp & ENA & B & ENB is
+            when "1111" =>
+                ual_sortie <= (others => '0');  -- Si tout est désactivé, toutes les sorties sont à 0
+            when others =>
+                ual_sortie <= (INVA_temp or (B and ENB), INVA_temp and (B and ENB), INVA_temp and (not ENB));
+        end case;
+    end process;
+
+    -- Appel du décodeur
+    process (F0, F1)
+    begin
+        case F0 & F1 is
+            when "00" =>
+                decodeur_sortie <= "0001";
+            when "01" =>
+                decodeur_sortie <= "0010";
+            when "10" =>
+                decodeur_sortie <= "0100";
+            when "11" =>
+                decodeur_sortie <= "1000";
+            when others =>
+                decodeur_sortie <= (others => '0');
+        end case;
+    end process;
+
+    -- Assemblage des entrées de l'additionneur
+    process (ual_sortie, decodeur_sortie)
+    begin
+        additionneur_entree <= ual_sortie(2) & ual_sortie(1) & ual_sortie(0) & decodeur_sortie;
+    end process;
+
+    -- Appel de l'additionneur
+    additionneur_inst: entity additionneur_4_entrees port map (
+        A => A,
+        B => B,
+        C => Cin,
+        D => additionneur_entree,
+        resultat => additionneur_resultat,
+        Cout => Cout
+    );
+
+    -- Multiplexeur pour sélectionner la sortie de l'additionneur
+    process (F0, F1, additionneur_resultat)
+    begin
+        case F0 & F1 is
+            when "00" =>
+                resultat <= additionneur_resultat(2 downto 0);
+            when "01" =>
+                resultat <= (others => '0');
+            when "10" =>
+                resultat <= (others => '0');
+            when "11" =>
+                resultat <= (others => '0');
+            when others =>
+                resultat <= (others => '0');
+        end case;
+    end process;
+
+end Behavioral;

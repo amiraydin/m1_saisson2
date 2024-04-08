@@ -1,0 +1,1 @@
+var listSal = List("Bob – EDF - 3000 €", "Marie – edf - 1500 €", "Imene – EDF - 9000 $", "Paul - Allianz – 4500 $", "Pierre - LaPoste - 1500 €", "Samir - Laposte - 3500 $", "Thi - LaPoste - 1500 €", "Eva - allianz - 6000 $", "Alice - edf - 5000 €", "Alice - Allianz - 1700 €")

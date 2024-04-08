@@ -1,0 +1,11 @@
+  	1-Compteur Simple avec Remise à Zéro Asynchrone: Voici un exemple de code VHDL pour un compteur simple avec remise à zéro asynchrone. Nous allons utiliser un signal d’horloge (CLK) en millisecondes pour incrémenter le compteur. Lorsque le signal de démarrage (Start) est activé, le compteur commence à compter. Lorsque le signal d’écho (Echo) est reçu, le comptage s’arrête et le résultat est affiché sur un afficheur 7 segments.
+
+
+
+	2-Sonar à Ultrasons et Afficheur 7 Segments: Pour intégrer le sonar à ultrasons et l’afficheur 7 segments, vous devrez ajouter des composants supplémentaires à votre projet VHDL. Le sonar à ultrasons mesurera la distance par rapport à un obstacle et enverra un signal d’écho (Echo) lorsque la mesure est terminée. Vous pouvez ensuite utiliser ce signal d’écho pour arrêter le comptage dans le compteur.
+
+Pour l’afficheur 7 segments, vous pouvez utiliser un décodeur BCD vers 7 segments pour afficher la valeur du compteur. Le décodeur convertira la valeur binaire du compteur en une séquence de segments activés pour afficher les chiffres de 0 à 9.
+
+N’oubliez pas d’ajouter les connexions appropriées entre le sonar, le compteur et l’afficheur 7 segments dans votre projet VHDL. 
+
+	3- Simulation dans MODELSIM: Pour simuler votre projet VHDL dans MODELSIM, créez un fichier de testbench qui génère les signaux d’entrée (CLK, Start, Echo, Reset) et observe la sortie (Count). Exécutez la simulation et vérifiez que le compteur fonctionne correctement en réponse aux signaux d’entrée.

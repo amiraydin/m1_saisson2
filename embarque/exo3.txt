@@ -1,0 +1,25 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.STD_LOGIC_ARITH.ALL;
+use IEEE.STD_LOGIC_UNSIGNED.ALL;
+
+entity ALU is
+    Port ( A : in  STD_LOGIC_VECTOR (3 downto 0);
+           B : in  STD_LOGIC_VECTOR (3 downto 0);
+           Opcode : in  STD_LOGIC_VECTOR (1 downto 0);
+           Result : out  STD_LOGIC_VECTOR (3 downto 0));
+end ALU;
+
+architecture Behavioral of ALU is
+begin
+    process(A, B, Opcode)
+    begin
+        case Opcode is
+            when "00" => Result <= A and B;
+            when "01" => Result <= A or B;
+            when "10" => Result <= A + B;
+            when "11" => Result <= A - B;
+            when others => Result <= (others => 'X');
+        end case;
+    end process;
+end Behavioral;

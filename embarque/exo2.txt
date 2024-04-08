@@ -1,0 +1,32 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+use IEEE.NUMERIC_STD.ALL;
+
+entity Sonar is
+    Port (
+        CLK : in STD_LOGIC;
+        Start : in STD_LOGIC;
+        Echo : in STD_LOGIC;
+        Distance : out STD_LOGIC_VECTOR (15 downto 0)
+    );
+end Sonar;
+
+architecture Behavioral of Sonar is
+    signal count : integer range 0 to 100 := 0;
+    signal temp : STD_LOGIC_VECTOR (15 downto 0) := (others => '0');
+begin
+    process(CLK)
+    begin
+        if rising_edge(CLK) then
+            if Start = '1' then
+                count <= 0;
+            elsif Echo = '1' then
+                temp <= STD_LOGIC_VECTOR(to_unsigned(count, 16));
+            else
+                count <= count + 1;
+            end if;
+        end if;
+    end process;
+    
+    Distance <= temp;
+end Behavioral;
