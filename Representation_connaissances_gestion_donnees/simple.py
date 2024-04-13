@@ -1,80 +1,92 @@
-import ply.lex as lex
-import ply.yacc as yacc
+from ply import lex, yacc
 
-# Liste des tokens
 tokens = (
     'ATOM',
-    'NOT',
     'AND',
+    'THEN',
+    'IFF',
+    'NOT',
+    'OR',
 )
 
-# Définition des tokens
-t_NOT = r'¬ | not'
-t_AND = r'∧ | and'
+t_ATOM = r'\b(?!(?:not|and|or|if|iff|then)\b)[a-zA-Z]+\b'
+t_AND = r'and'
+t_THEN = r'then'
+t_IFF = r'iff'
+t_NOT = r'not'
+t_OR = r'or'
 
-# Ignorer les espaces et les tabulations
-t_ignore = ' \t'
+# A rule to track line numbers
+def t_newline(t):
+    r'\n+'
+    t.lexer.lineno += len(t.value)
 
-# Règle pour les atomes
-def t_ATOM(t):
-    r'[a-zA-Z]+'
-    return t
+# A string containing ignored characters (spaces and tabs)
+t_ignore  = ' \t'
 
-# Gérer les erreurs de token
 def t_error(t):
-    print(f"Caractère non valide : '{t.value[0]}'")
+    print(f"Illegal character '{t.value[0]}'")
     t.lexer.skip(1)
 
-# Créer l'analyseur lexical
 lexer = lex.lex()
 
-# Définition des règles de syntaxe
-def p_formula(p):
-    '''formula : NOT atom
-                | atom AND atom'''
-    pass
+precedence = (
+    ('left', 'THEN'),
+    ('left', 'AND'),
+    ('left', 'IFF'),
+    ('left', 'OR'),
+    ('left', 'NOT'),
+)
 
-def p_atom(p):
-    '''atom : ATOM'''
-    pass
+def p_expression_atom(p):
+    'expression : ATOM'
+    p[0] = p[1]
 
-# Gérer les erreurs de syntaxe
+def p_expression_and(p):
+    'expression : expression AND expression'
+    p[0] = f"{p[1]} ∧ {p[3]}"
+
+def p_expression_then(p):
+    'expression : expression THEN expression'
+    p[0] = f"{p[1]} -> {p[3]}"
+
+def p_expression_iff(p):
+    'expression : expression IFF expression'
+    p[0] = f"{p[1]} <-> {p[3]}"
+
+def p_expression_or(p):
+    'expression : expression OR expression'
+    p[0] = f"{p[1]} v {p[3]}"
+
+def p_expression_not(p):
+    'expression : NOT expression'
+    p[0] = f"¬ {p[2]}"
+
+err_detected = False
+
 def p_error(p):
-    if p:
-        print(f"Erreur de syntaxe près de '{p.value}'")
-    else:
-        print("Erreur de syntaxe à la fin de l'entrée")
-    return False
+    global err_detected
+    # print(f"Syntax error at '{p}'")
+    err_detected = True
 
-
-# Créer l'analyseur syntaxique
 parser = yacc.yacc()
 
-# Fonction de vérification de la formule
-def verify_formula(input_formula):
-    lexer.input(input_formula)
-    try:
-        parsed = parser.parse(input_formula, lexer=lexer)
-        corrected_formula = parsed_to_string(parsed)
-        return True, corrected_formula
-    except:
-        return False, ""
-
-# Convertir l'arbre syntaxique parsé en une chaîne de caractères
-def parsed_to_string(parsed):
-    if len(parsed) == 2:
-        if parsed[0] == 'NOT':
-            return "¬" + parsed_to_string(parsed[1])
-        elif parsed[0] == 'AND':
-            return "(" + parsed_to_string(parsed[1]) + " ^ " + parsed_to_string(parsed[2]) + ")"
+def parse(input):
+    global err_detected
+    err_detected = False
+    result = parser.parse(input)
+    if not err_detected and result:
+        print(f"Votre formule est correcte: {result}")
+        return True
     else:
-        return parsed[1]
+        print("La formule n'est pas correcte.")
+        return False
 
-# Exemple d'utilisation
+# Test
 if __name__ == '__main__':
     user_input = input("Entrez une formule propositionnelle : ")
-    valid, corrected_formula = verify_formula(user_input)
-    if valid:
-        print("Formule correcte :", corrected_formula)
-    else:
-        print("Formule incorrecte")
+    # code = "a and b then c"
+    valid = parse(user_input)
+    # print("valid : ", valid)
+    if not valid:
+        print("Votre Formule de merde : ", user_input)
